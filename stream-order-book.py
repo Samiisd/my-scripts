@@ -2,6 +2,7 @@ import atexit
 import csv
 import os
 import asyncio
+from sys import stderr
 import websockets
 from math import floor
 from time import time
@@ -122,11 +123,19 @@ async def main():
 
     with open(csv_filename, "a", newline="") as csvfile:
         csv_writer = csv.writer(csvfile)
-        tasks = [
-            binance_partial_depth_stream(symbol, csv_writer)
-            for symbol in symbols
-        ]
-        await asyncio.gather(*tasks)
+        while True:
+            try:
+                tasks = [
+                    binance_partial_depth_stream(symbol, csv_writer)
+                    for symbol in symbols
+                ]
+                await asyncio.gather(*tasks)
+            except Exception as e:
+                print(f"[IGNORED] Exception: {e}")
+                await asyncio.sleep(0.05)
+            except KeyboardInterrupt:
+                print("KeyboardInterrupt. Exiting...")
+                exit(0)
 
 
 if __name__ == "__main__":
